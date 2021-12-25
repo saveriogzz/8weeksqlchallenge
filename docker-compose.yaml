@@ -1,0 +1,18 @@
+# Use postgres/example user/password credentials
+version: '3.1'
+
+services:
+
+  8weeksdb:
+    image: postgres
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: 8weekschallenge
+    volumes:
+      - ${PWD}/postgres-data:/var/lib/postgresql/data
+
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - 8080:8080
