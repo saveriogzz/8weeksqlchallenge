@@ -19,3 +19,25 @@ select product_id, count(product_id) from sales group by product_id limit 1;
 
 -- 5. Which item was the most popular for each customer?
 select distinct customer_id, product_id, count(product_id) from sales group by (customer_id, product_id) order by customer_id;
+
+
+-- 6. Which item was purchased first by the customer after they became a member?
+WITH added_row_number as (
+  SELECT 
+    s.customer_id, 
+    order_date, 
+    product_id, 
+    join_date, 
+    ROW_NUMBER() OVER(PARTITION BY s.customer_id) AS row_number 
+  FROM 
+    sales s 
+    JOIN members m ON s.customer_id = m.customer_id 
+  WHERE 
+    order_date >= join_date
+) 
+SELECT 
+  * 
+FROM 
+  added_row_number 
+WHERE 
+  row_number = 1;
