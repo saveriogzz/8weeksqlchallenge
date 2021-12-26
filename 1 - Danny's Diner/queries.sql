@@ -14,3 +14,8 @@ select distinct on (customer_id) customer_id, product_id from sales order by cus
 
 
 -- 4. What is the most purchased item on the menu and how many times was it purchased by all customers?
+select product_id, count(product_id) from sales group by product_id limit 1;
+
+
+-- 5. Which item was the most popular for each customer?
+select distinct customer_id, product_id, count(product_id) from sales group by (customer_id, product_id) order by customer_id;
