@@ -1,14 +1,19 @@
+--------------------------
 ---- A. Pizza Metrics ----
+--------------------------
+
 -- A1. How many pizzas were ordered?
 select 
   count(pizza_id) 
 from 
   customer_orders;
+
 -- A2. How many unique customer orders were made?
 select 
   count(distinct order_id) 
 from 
   customer_orders;
+
 -- A3. How many successful orders were delivered by each runner?
 select 
   runner_id, 
@@ -19,6 +24,7 @@ where
   pickup_time != 'null' 
 group by 
   runner_id;
+
 -- A4. How many of each type of pizza was delivered?
 select 
   pizza_id, 
@@ -30,34 +36,35 @@ where
   pickup_time != 'null' 
 group by 
   pizza_id;
+
 -- A5. How many Vegetarian and Meatlovers were ordered by each customer?
-select 
+SELECT 
   pizza_name, 
   count(*) 
-from 
+FROM 
   customer_orders co 
-  join pizza_names pn on co.pizza_id = pn.pizza_id 
-group by 
+  JOIN pizza_names pn ON co.pizza_id = pn.pizza_id 
+GROUP BY 
   pn.pizza_name;
 
 -- A6. What was the maximum number of pizzas delivered in a single order?
-with count_table as (
-  select 
+WITH count_table AS (
+  SELECT 
     co.order_id, 
     count(pizza_id) 
-  from 
+  FROM 
     customer_orders co 
-    join runner_orders ro on co.order_id = ro.order_id 
-  where 
+    JOIN runner_orders ro ON co.order_id = ro.order_id 
+  WHERE 
     pickup_time != 'null' 
-  group by 
+  GROUP BY 
     co.order_id 
-  order by 
+  ORDER BY 
     co.order_id
 ) 
-select 
+SELECT 
   max(count) 
-from 
+FROM 
   count_table;
 
 -- A7. For each customer, how many delivered pizzas had at least 1 change and how many had no changes?
@@ -109,8 +116,8 @@ SELECT
   SUM(
     CASE WHEN exc = 1 
     AND ext = 1 THEN 1 ELSE 0 END
-  ) as pizzas_both_excl_and_extr 
-from 
+  ) AS pizzas_both_excl_and_extr 
+FROM 
   change_table;
 
 --- A9. What was the total volume of pizzas ordered for each hour of the day?
@@ -132,13 +139,13 @@ ORDER BY
 SELECT 
   extract(
     isodow 
-    from 
+    FROM 
       order_time
-  ) as order_day, 
+  ) AS order_day, 
   count(*) 
 FROM 
   customer_orders 
-group by 
+GROUP BY 
   order_day 
-order by 
+ORDER BY 
   order_day;
