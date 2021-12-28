@@ -22,3 +22,69 @@ where
   duration != 'null';
 
 -- B3. Is there any relationship between the number of pizzas and how long the order takes to prepare?
+WITH _stats AS (
+  SELECT 
+    co.order_id, 
+    AGE(
+      pickup_time :: TIMESTAMP, order_time :: TIMESTAMP
+    ) AS difference, 
+    COUNT(pizza_id) AS pizza_count 
+  FROM 
+    customer_orders co 
+    JOIN runner_orders ro ON co.order_id = ro.order_id 
+  WHERE 
+    ro.pickup_time != 'null' 
+  GROUP BY 
+    co.order_id, 
+    difference 
+  ORDER BY 
+    order_id
+) 
+SELECT 
+  order_id, 
+  difference / pizza_count AS time_per_pizza 
+FROM 
+  _stats;
+
+-- B4. What was the average distance travelled for each customer?
+SELECT                       
+  AVG(
+    SPLIT_PART(distance, 'km', 1):: FLOAT
+  ):: FLOAT AS avg_distance 
+FROM 
+  runner_orders 
+WHERE 
+  duration != 'null';
+
+-- B5. What was the difference between the longest and shortest delivery times for all orders?
+WITH durations AS (
+  SELECT 
+    SPLIT_PART(duration, 'm', 1):: INT AS duration 
+  FROM 
+    runner_orders 
+  WHERE 
+    duration != 'null'
+) 
+SELECT 
+  (
+    MAX(duration) - MIN(duration)
+  ) as difference 
+FROM 
+  durations;
+
+-- B6. What was the average speed for each runner for each delivery and do you notice any trend for these values?
+SELECT 
+  runner_id, 
+  AVG(
+    SPLIT_PART(distance, 'km', 1):: FLOAT / SPLIT_PART(duration, 'm', 1):: FLOAT
+  ) * 16.666666667 as meters_per_seconds 
+FROM 
+  runner_orders 
+where 
+  duration != 'null' 
+GROUP BY 
+  runner_id 
+ORDER BY 
+  runner_id;
+
+-- B7. What is the successful delivery percentage for each runner?
