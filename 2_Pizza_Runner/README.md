@@ -37,3 +37,36 @@ with count_table as (
 |  3  |
 
 ### 7. For each customer, how many delivered pizzas had at least 1 change and how many had no changes?
+```sql
+WITH change_table AS (
+  SELECT 
+    co.customer_id, 
+    co.pizza_id, 
+    exclusions, 
+    extras, 
+    CASE WHEN exclusions = '' OR exclusions = 'null' 
+    AND extras = '' OR extras = 'null' THEN 'N' ELSE 'Y' END AS change 
+  FROM 
+    customer_orders co 
+    JOIN runner_orders ro ON co.order_id = ro.order_id 
+  WHERE 
+    pickup_time != 'null'
+) 
+SELECT 
+  customer_id, 
+  COUNT(CASE WHEN change = 'Y' THEN 1 END) AS atLeastOneChange, 
+  COUNT(CASE WHEN change = 'N' THEN 1 END) AS NoChanges 
+FROM 
+  change_table 
+GROUP BY 
+  customer_id 
+ORDER BY 
+  customer_id;
+  ```
+| customer_id | atleastonechange | nochanges|
+|-----------:|-----------------:|----------:|
+|        101 |                0 |         2 |
+|        102 |                0 |         3 |
+|        103 |                3 |         0 |
+|        104 |                2 |         1 |
+|        105 |                1 |         0 |
