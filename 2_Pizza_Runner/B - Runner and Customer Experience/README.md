@@ -117,3 +117,28 @@ ORDER BY
   runner_id;
 ```
 ### 7. What is the successful delivery percentage for each runner?
+```sql
+SELECT
+  runner_id,
+  100*SUM(
+  CASE
+    WHEN
+      distance != 'null' 
+    THEN
+      1 
+    ELSE
+      0 
+  END
+) / COUNT(*) AS percentage 
+FROM
+  runner_orders 
+GROUP BY
+  runner_id 
+ORDER BY
+  runner_id;
+  ```
+| runner_id | percentage| 
+|----------:|----------:|
+|        1 |        100|
+|        2 |         75|
+|        3 |         50|
