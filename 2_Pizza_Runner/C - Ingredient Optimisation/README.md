@@ -27,4 +27,4 @@ ORDER BY
   pizza_name;
 ```
 
-### 3. What was the most commonly added extra?
+### 2. What was the most commonly added extra?

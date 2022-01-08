@@ -113,3 +113,35 @@ VALUES
   (10, 'Salami'),
   (11, 'Tomatoes'),
   (12, 'Tomato Sauce');
+
+
+-- To help ourselves, we will create a few VIEWS
+CREATE VIEW customer_orders_cleaned AS WITH first_layer AS (
+    SELECT order_id,
+        customer_id,
+        pizza_id,
+        CASE
+            WHEN exclusions = '' THEN NULL
+            WHEN exclusions = 'null' THEN NULL
+            ELSE exclusions
+        END as exclusions,
+        CASE              
+            WHEN extras = '' THEN NULL
+            WHEN extras = 'null' THEN NULL
+            ELSE extras
+        END as extras,
+        order_time
+    FROM customer_orders
+)                       
+SELECT ROW_NUMBER() OVER (
+        -- We are adding a row_number rank to deal with orders having multiple times the same pizza in it
+        ORDER BY order_id,                                                                               
+            pizza_id
+    ) AS row_number_order,
+    order_id,
+    customer_id,
+    pizza_id,
+    exclusions,
+    extras,
+    order_time;
+
