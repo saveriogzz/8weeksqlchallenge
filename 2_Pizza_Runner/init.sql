@@ -132,7 +132,7 @@ CREATE VIEW customer_orders_cleaned AS WITH first_layer AS (
         END as extras,
         order_time
     FROM customer_orders
-)                       
+)
 SELECT ROW_NUMBER() OVER (
         -- We are adding a row_number rank to deal with orders having multiple times the same pizza in it
         ORDER BY order_id,                                                                               
@@ -143,5 +143,33 @@ SELECT ROW_NUMBER() OVER (
     pizza_id,
     exclusions,
     extras,
-    order_time;
+    order_time
+  FROM first_layer;
 
+
+CREATE VIEW extras_exclusions AS SELECT customers_info.order_id,
+    customers_info.pizza_id,
+    pizza_names.pizza_name,
+    customers_info.exclusion_col1,
+    top1.topping_name AS topping_name1,
+        CASE
+            WHEN (customers_info.exclusion_col2 = ''::text) THEN NULL::integer
+            ELSE (TRIM(BOTH FROM customers_info.exclusion_col2))::integer
+        END AS exclusion_col2,
+    customers_info.extras_col1,
+    top2.topping_name AS topping_name3,
+        CASE
+            WHEN (customers_info.extras_col2 = ''::text) THEN NULL::integer
+            ELSE (TRIM(BOTH FROM customers_info.extras_col2))::integer
+        END AS extras_col2
+   FROM (((( SELECT customer_orders_cleaned.order_id,
+            customer_orders_cleaned.pizza_id,
+            split_part((customer_orders_cleaned.exclusions)::text, ','::text, 1) AS exclusion_col1,
+            split_part((customer_orders_cleaned.exclusions)::text, ','::text, 2) AS exclusion_col2,
+            split_part((customer_orders_cleaned.extras)::text, ','::text, 1) AS extras_col1,
+            split_part((customer_orders_cleaned.extras)::text, ','::text, 2) AS extras_col2
+           FROM customer_orders_cleaned
+          ORDER BY customer_orders_cleaned.order_id) customers_info
+     JOIN pizza_names ON ((customers_info.pizza_id = pizza_names.pizza_id)))
+     LEFT JOIN pizza_toppings top1 ON (((customers_info.exclusion_col1)::integer = top1.topping_id)))
+     LEFT JOIN pizza_toppings top2 ON (((customers_info.extras_col1)::integer = top2.topping_id)));

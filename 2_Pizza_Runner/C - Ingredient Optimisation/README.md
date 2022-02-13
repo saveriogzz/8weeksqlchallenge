@@ -26,6 +26,22 @@ FROM
 ORDER BY
   pizza_name;
 ```
+ pizza_name | topping_id | topping_name 
+------------|------------|--------------
+ Meatlovers |          2 | BBQ Sauce
+ Meatlovers |          8 | Pepperoni
+ Meatlovers |          4 | Cheese
+ Meatlovers |         10 | Salami
+ Meatlovers |          5 | Chicken
+ Meatlovers |          1 | Bacon
+ Meatlovers |          6 | Mushrooms
+ Meatlovers |          3 | Beef
+ Vegetarian |         12 | Tomato Sauce
+ Vegetarian |          4 | Cheese
+ Vegetarian |          6 | Mushrooms
+ Vegetarian |          7 | Onions
+ Vegetarian |          9 | Peppers
+ Vegetarian |         11 | Tomatoes
 
 ### 2. What was the most commonly added extra?
 ```sql
@@ -49,6 +65,9 @@ FROM
     pizza_toppings pt 
     ON ec.extra_unnested = pt.topping_id;
 ```
+|topping_name |
+|-------------|
+|       Bacon |
 
 ### 3. What was the most common exclusion?
 ```sql
@@ -72,8 +91,11 @@ FROM
     pizza_toppings pt 
     ON ec.excl_unnested = pt.topping_id;
 ```
+|topping_name |
+|-------------|
+|       Cheese|
 
-### 3. Generate an order item for each record in the customers_orders table in the format of one of the following:
+### 3. Generate an order item for each record in the `customers_orders` table in the format of one of the following:
 - Meat Lovers
 - Meat Lovers - Exclude Beef
 - Meat Lovers - Extra Bacon
