@@ -122,6 +122,9 @@ FROM churn_count, total_count;
 |        307 |       30.7|
 
 
+### 5. How many customers have churned straight after their initial free trial - what percentage is this rounded to the nearest whole number?
+
+
 ```sql
 WITH churn_count AS 
 (
