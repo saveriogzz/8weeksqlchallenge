@@ -120,3 +120,68 @@ FROM churn_count, total_count;
 |num_churned | percentage|
 |------------|-----------|
 |        307 |       30.7|
+
+
+```sql
+WITH churn_count AS 
+(
+  SELECT
+    COUNT(t.*) AS total_churned 
+  FROM
+    (
+      WITH ranking AS 
+      (
+        SELECT
+          s.*,
+          RANK() OVER (PARTITION BY customer_id 
+        ORDER BY
+          start_date) AS plan_rank 
+        FROM
+          subscriptions AS s
+      )
+,
+      conditions AS 
+      (
+        SELECT
+          r.*,
+          CASE
+            WHEN
+              plan_id = 0 
+              AND plan_rank = 1 
+            THEN
+              1 
+            WHEN
+              plan_id = 4 
+              AND plan_rank = 4 
+            THEN
+              1 
+            ELSE
+              0 
+          END
+          AS conditions 
+        FROM
+          ranking AS r
+      )
+      SELECT
+        customer_id,
+        SUM(conditions) AS s 
+      FROM
+        conditions 
+      GROUP BY
+        customer_id
+    )
+    t 
+  WHERE
+    s = 2
+)
+SELECT
+  churn_count.total_churned,
+  round((churn_count.total_churned::FLOAT / total_count.num::FLOAT)*100) AS perc 
+FROM
+  churn_count,
+  total_count;
+```
+
+| total_churned | perc |
+|---------------|------|
+|            45 |    4 |
