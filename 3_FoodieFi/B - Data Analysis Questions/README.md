@@ -11,6 +11,7 @@ FROM
 |-------|
 |  1000 |
 
+
 ### 2. What is the monthly distribution of trial plan start_date values for our dataset - use the start of the month as the group by value
 ```sql
 WITH trial_plans AS 
@@ -46,6 +47,7 @@ ORDER BY
 |    10 |    46|
 |    11 |    49|
 |    12 |    43|
+
 
 ### 3. What plan start_date values occur after the year 2020 for our dataset? Show the breakdown by count of events for each plan_name
 ```sql
@@ -100,6 +102,7 @@ WHERE
 |pro monthly   |    60|
 |basic monthly |     8|
 
+
 ### 4. What is the customer count and percentage of customers who have churned rounded to 1 decimal place?
 ```sql
 DROP TABLE IF EXISTS total_count;
@@ -120,3 +123,113 @@ FROM churn_count, total_count;
 |num_churned | percentage|
 |------------|-----------|
 |        307 |       30.7|
+
+
+### 5. How many customers have churned straight after their initial free trial - what percentage is this rounded to the nearest whole number?
+
+--TODO this can be done with a LEAD() windows function
+```sql
+DROP TABLE IF EXISTS total_count;
+CREATE TEMP TABLE total_count AS (
+    SELECT COUNT(DISTINCT customer_id) AS num
+    FROM foodie_fi.subscriptions
+);
+
+WITH churn_count AS 
+(
+  SELECT
+    COUNT(t.*) AS total_churned 
+  FROM
+    (
+      WITH ranking AS 
+      (
+        SELECT
+          s.*,
+          RANK() OVER (PARTITION BY customer_id 
+        ORDER BY
+          start_date) AS plan_rank 
+        FROM
+          subscriptions AS s
+      )
+,
+      conditions AS 
+      (
+        SELECT
+          r.*,
+          CASE
+            WHEN
+              plan_id = 0 
+              AND plan_rank = 1 
+            THEN
+              1 
+            WHEN
+              plan_id = 4 
+              AND plan_rank = 2
+            THEN
+              1 
+            ELSE
+              0 
+          END
+          AS conditions 
+        FROM
+          ranking AS r
+      )
+      SELECT
+        customer_id,
+        SUM(conditions) AS s 
+      FROM
+        conditions 
+      GROUP BY
+        customer_id
+    )
+    t 
+  WHERE
+    s = 2
+)
+SELECT
+  churn_count.total_churned,
+  round((churn_count.total_churned::FLOAT / total_count.num::FLOAT)*100) AS perc 
+FROM
+  churn_count,
+  total_count;
+```
+
+a much cleaner solution makes use of `LEAD()`
+
+```sql
+DROP TABLE IF EXISTS total_count;
+CREATE TEMP TABLE total_count AS (
+    SELECT COUNT(DISTINCT customer_id) AS num
+    FROM foodie_fi.subscriptions
+);
+
+WITH churn_count AS 
+(
+  SELECT
+    COUNT(*) AS total_churned 
+  FROM
+    (
+      SELECT
+        s.*,
+        LEAD(plan_id, 1) OVER (PARTITION BY customer_id 
+      ORDER BY
+        start_date) AS next_plan 
+      FROM
+        subscriptions AS s
+    )
+    w 
+  WHERE
+    w.plan_id = 0 
+    AND w.next_plan = 4
+)
+SELECT
+  churn_count.total_churned,
+  round((churn_count.total_churned::FLOAT / total_count.num::FLOAT)*100) AS perc 
+FROM
+  churn_count,
+  total_count;
+```
+
+| total_churned | perc |
+|---------------|------|
+|            92 |    9 |
