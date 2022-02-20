@@ -11,6 +11,7 @@ FROM
 |-------|
 |  1000 |
 
+
 ### 2. What is the monthly distribution of trial plan start_date values for our dataset - use the start of the month as the group by value
 ```sql
 WITH trial_plans AS 
@@ -46,6 +47,7 @@ ORDER BY
 |    10 |    46|
 |    11 |    49|
 |    12 |    43|
+
 
 ### 3. What plan start_date values occur after the year 2020 for our dataset? Show the breakdown by count of events for each plan_name
 ```sql
@@ -100,6 +102,7 @@ WHERE
 |pro monthly   |    60|
 |basic monthly |     8|
 
+
 ### 4. What is the customer count and percentage of customers who have churned rounded to 1 decimal place?
 ```sql
 DROP TABLE IF EXISTS total_count;
@@ -124,8 +127,14 @@ FROM churn_count, total_count;
 
 ### 5. How many customers have churned straight after their initial free trial - what percentage is this rounded to the nearest whole number?
 
-
+--TODO this can be done with a LEAD() windows function
 ```sql
+DROP TABLE IF EXISTS total_count;
+CREATE TEMP TABLE total_count AS (
+    SELECT COUNT(DISTINCT customer_id) AS num
+    FROM foodie_fi.subscriptions
+);
+
 WITH churn_count AS 
 (
   SELECT
@@ -155,7 +164,7 @@ WITH churn_count AS
               1 
             WHEN
               plan_id = 4 
-              AND plan_rank = 4 
+              AND plan_rank = 2
             THEN
               1 
             ELSE
@@ -185,6 +194,42 @@ FROM
   total_count;
 ```
 
+a much cleaner solution makes use of `LEAD()`
+
+```sql
+DROP TABLE IF EXISTS total_count;
+CREATE TEMP TABLE total_count AS (
+    SELECT COUNT(DISTINCT customer_id) AS num
+    FROM foodie_fi.subscriptions
+);
+
+WITH churn_count AS 
+(
+  SELECT
+    COUNT(*) AS total_churned 
+  FROM
+    (
+      SELECT
+        s.*,
+        LEAD(plan_id, 1) OVER (PARTITION BY customer_id 
+      ORDER BY
+        start_date) AS next_plan 
+      FROM
+        subscriptions AS s
+    )
+    w 
+  WHERE
+    w.plan_id = 0 
+    AND w.next_plan = 4
+)
+SELECT
+  churn_count.total_churned,
+  round((churn_count.total_churned::FLOAT / total_count.num::FLOAT)*100) AS perc 
+FROM
+  churn_count,
+  total_count;
+```
+
 | total_churned | perc |
 |---------------|------|
-|            45 |    4 |
+|            92 |    9 |
