@@ -127,7 +127,6 @@ FROM churn_count, total_count;
 
 ### 5. How many customers have churned straight after their initial free trial - what percentage is this rounded to the nearest whole number?
 
---TODO this can be done with a LEAD() windows function
 ```sql
 DROP TABLE IF EXISTS total_count;
 CREATE TEMP TABLE total_count AS (
@@ -233,3 +232,62 @@ FROM
 | total_churned | perc |
 |---------------|------|
 |            92 |    9 |
+
+
+### 6. What is the number and percentage of customer plans after their initial free trial?
+
+```sql
+WITH last_plan AS 
+(
+  SELECT
+    s.customer_id,
+    p.plan_name,
+    s.start_date,
+    ROW_NUMBER() OVER(PARTITION BY customer_id 
+  ORDER BY
+    start_date DESC) 
+  FROM
+    subscriptions s 
+    JOIN
+      plans p 
+      ON s.plan_id = p.plan_id 
+  WHERE
+    start_date <= '2020-12-31'
+)
+,
+total_count AS 
+(
+  SELECT
+    COUNT(DISTINCT customer_id) AS num 
+  FROM
+    foodie_fi.subscriptions
+)
+,
+count_groups AS
+(
+  SELECT
+    plan_name,
+    COUNT(plan_name) 
+  FROM
+    last_plan 
+  WHERE
+    last_plan.ROW_NUMBER = 1 
+  GROUP BY
+    last_plan.plan_name
+)
+SELECT
+  count_groups.*,
+  round((count_groups.COUNT::NUMERIC / total_count.num::NUMERIC)*100, 2) AS perc 
+FROM
+  count_groups,
+  total_count;
+```
+
+   plan_name   | count | perc  
+---------------|-------|-------
+ basic monthly |   224 | 22.40
+ churn         |   236 | 23.60
+ pro annual    |   195 | 19.50
+ pro monthly   |   326 | 32.60
+ trial         |    19 |  1.90
+
