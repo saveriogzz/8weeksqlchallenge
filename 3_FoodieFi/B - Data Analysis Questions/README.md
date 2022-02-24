@@ -233,8 +233,48 @@ FROM
 |---------------|------|
 |            92 |    9 |
 
-
 ### 6. What is the number and percentage of customer plans after their initial free trial?
+
+```sql
+DROP TABLE IF EXISTS total_count;
+CREATE TEMP TABLE total_count AS (
+    SELECT COUNT(DISTINCT customer_id) AS num
+    FROM foodie_fi.subscriptions
+);
+
+WITH abb_count AS 
+(
+  SELECT
+    COUNT(*) AS total_abb 
+  FROM
+    (
+      SELECT
+        s.*,
+        LEAD(plan_id, 1) OVER (PARTITION BY customer_id 
+      ORDER BY
+        start_date) AS next_plan 
+      FROM
+        subscriptions AS s
+    )
+    w 
+  WHERE
+    w.plan_id = 0 
+    AND w.next_plan IN (1,2,3)
+)
+SELECT
+  abb_count.total_abb,
+  round((abb_count.total_abb::FLOAT / total_count.num::FLOAT)*100) AS perc 
+FROM
+  abb_count,
+  total_count;
+```
+
+| total_abb | perc |
+|----------|-------|
+|      908 |   91  |
+
+
+### 7. What is the customer count and percentage breakdown of all 5 plan_name values at 2020-12-31?
 
 ```sql
 WITH last_plan AS 
