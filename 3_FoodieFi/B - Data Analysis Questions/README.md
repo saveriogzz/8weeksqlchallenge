@@ -331,3 +331,58 @@ FROM
  pro monthly   |   326 | 32.60
  trial         |    19 |  1.90
 
+
+### 8. How many customers have upgraded to an annual plan in 2020?
+
+```sql
+WITH cte AS 
+(
+  SELECT
+    s.*,
+    LEAD(plan_id, 1) OVER (PARTITION BY customer_id 
+  ORDER BY
+    start_date) AS next_plan 
+  FROM
+    subscriptions AS s
+)
+SELECT
+  COUNT(*) as total_ann_abb
+FROM
+  cte 
+WHERE
+  next_plan = 3 
+  AND date_part('year', start_date) = 2020;
+```
+
+| total_ann_abb |
+|---------------|
+|       253     |
+
+
+### 9. How many days on average does it take for a customer to an annual plan from the day they join Foodie-Fi?
+
+```sql
+WITH ann_plan_dates AS 
+(
+  SELECT
+    s1.*
+  FROM
+    subscriptions AS s1
+  WHERE plan_id = 3
+), join_dates AS (
+  SELECT
+    s2.*,
+    ROW_NUMBER() OVER (PARTITION BY s2.customer_id 
+  ORDER BY
+    s2.start_date) AS row_number
+    FROM subscriptions as s2
+)
+SELECT
+ ROUND(AVG(t1.start_date - t2.start_date), 2) as avg_days_before_year_abb
+FROM
+  ann_plan_dates t1 LEFT JOIN join_dates t2 ON t1.customer_id = t2.customer_id WHERE t2.row_number=1;
+```
+
+|avg_days_before_year_abb |
+|-------------------------|
+|                   104.62|
