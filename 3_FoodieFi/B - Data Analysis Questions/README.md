@@ -391,25 +391,75 @@ FROM
 ### 10. Can you further breakdown this average value into 30 day periods (i.e. 0-30 days, 31-60 days etc)
 
 ```sql
-SELECT cases as buckets, ROUND(AVG(days),2) AS avg_days FROM (SELECT days, CASE WHEN d.days<31 THEN 'lessThan30days' WHEN d.days<61 THEN 'lessThan60days' WHEN d.days<90 THEN 'lessThan90days' WHEN d.days<181 THEN 'lessThan6month' WHEN d.days<365 THEN 'lessThan1year' ELSE 'moreThanOneYear' END as cases FROM (WITH ann_plan_dates AS 
-(
-  SELECT
-    s1.*
-  FROM
-    subscriptions AS s1
-  WHERE plan_id = 3
-), join_dates AS (
-  SELECT
-    s2.*,
-    ROW_NUMBER() OVER (PARTITION BY s2.customer_id 
-  ORDER BY
-    s2.start_date) AS row_number
-    FROM subscriptions as s2
-)
 SELECT
- t1.start_date - t2.start_date as days
+  cases AS buckets,
+  round(AVG(days), 2) AS avg_days 
 FROM
-  ann_plan_dates t1 LEFT JOIN join_dates t2 ON t1.customer_id = t2.customer_id WHERE t2.row_number=1) d) c GROUP BY buckets;
+  (
+    SELECT
+      days,
+      CASE
+        WHEN
+          d.days < 31 
+        THEN
+          'lessThan30days' 
+        WHEN
+          d.days < 61 
+        THEN
+          'lessThan60days' 
+        WHEN
+          d.days < 90 
+        THEN
+          'lessThan90days' 
+        WHEN
+          d.days < 181 
+        THEN
+          'lessThan6month' 
+        WHEN
+          d.days < 365 
+        THEN
+          'lessThan1year' 
+        ELSE
+          'moreThanOneYear' 
+      END
+      AS cases 
+    FROM
+      (
+        WITH ann_plan_dates AS 
+        (
+          SELECT
+            s1.* 
+          FROM
+            subscriptions AS s1 
+          WHERE
+            plan_id = 3 
+        )
+,
+        join_dates AS 
+        (
+          SELECT
+            s2.*,
+            ROW_NUMBER() OVER (PARTITION BY s2.customer_id 
+          ORDER BY
+            s2.start_date) AS ROW_NUMBER 
+          FROM
+            subscriptions AS s2 
+        )
+        SELECT
+          t1.start_date - t2.start_date AS days 
+        FROM
+          ann_plan_dates t1 
+          LEFT JOIN
+            join_dates t2 
+            ON t1.customer_id = t2.customer_id 
+        WHERE
+          t2.ROW_NUMBER = 1
+      )
+      d
+  )
+  c 
+GROUP BY
+  buckets;
 ```
 
 |    buckets     | avg_days|
@@ -422,3 +472,28 @@ FROM
 
 
 ### 11. How many customers downgraded from a pro monthly to a basic monthly plan in 2020?
+
+```sql
+WITH cte AS 
+(
+  SELECT
+    s.*,
+    LEAD(plan_id, 1) OVER (PARTITION BY customer_id 
+  ORDER BY
+    start_date) AS next_plan 
+  FROM
+    subscriptions AS s 
+)
+SELECT
+  COUNT(*) AS downgraded 
+FROM
+  cte 
+WHERE
+  start_date <= '2020-12-31' 
+  AND next_plan = 1 
+  AND plan_id = 2;
+```
+
+|downgraded |
+|-----------|
+|         0 |
