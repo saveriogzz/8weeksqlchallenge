@@ -33,11 +33,13 @@ order by
 -- 4. What is the most purchased item on the menu and how many times was it purchased by all customers?
 select 
   product_id, 
-  count(product_id) 
+  count(product_id) as count
 from 
   sales 
 group by 
-  product_id 
+  product_id
+order by
+  count
 limit 
   1;
 
